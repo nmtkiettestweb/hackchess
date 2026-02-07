@@ -2,56 +2,108 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>AEGIS ARENA | SECURE CORE</title>
+    <title>AEGIS ARENA | THE OVERLORD AI</title>
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <style>
-        body { background: #05070a; color: #00f3ff; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; padding-top: 50px; }
-        #board { width: 450px; border: 2px solid #00f3ff; box-shadow: 0 0 20px rgba(0,243,255,0.3); }
-        .status-box { margin-top: 20px; padding: 15px; background: #111; border-left: 5px solid #ff003c; width: 420px; }
+        :root { --neon: #00f3ff; --danger: #ff003c; --bg: #05070a; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+
+        /* Màn hình chọn phe */
+        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(5,7,10,0.95); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .choice-btn { padding: 20px 50px; margin: 20px; font-size: 1.5rem; border: 2px solid var(--neon); background: none; color: var(--neon); cursor: pointer; transition: 0.3s; letter-spacing: 2px; }
+        .choice-btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 30px var(--neon); }
+
+        /* Layout chính */
+        .arena { display: grid; grid-template-columns: 500px 350px; gap: 30px; padding: 30px; background: #0d1117; border: 1px solid #30363d; border-radius: 15px; box-shadow: 0 20px 80px rgba(0,0,0,0.7); }
+        #board { border: 4px solid #161b22; border-radius: 4px; }
+        
+        /* Panel bên phải */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+        .status-panel { background: #000; padding: 20px; border-left: 4px solid var(--neon); }
+        .label { color: var(--neon); font-size: 10px; text-transform: uppercase; margin-bottom: 8px; opacity: 0.7; }
+        #status-txt { font-size: 18px; font-weight: bold; }
+        
+        #log { height: 200px; overflow-y: auto; background: rgba(0,0,0,0.5); border: 1px solid #222; padding: 10px; font-family: 'Courier New', monospace; font-size: 13px; color: #0f0; line-height: 1.6; }
+        
+        .action-btn { background: none; border: 1px solid var(--danger); color: var(--danger); padding: 12px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .action-btn:hover { background: var(--danger); color: #fff; }
     </style>
 </head>
 <body>
 
-    <h1>AEGIS SYSTEM [ENCRYPTED]</h1>
-    <div id="board"></div>
-    
-    <div class="status-box">
-        <div id="status">STATUS: SYSTEM READY</div>
-        <div id="depth-display">DEPTH: 0/24</div>
+    <div id="overlay">
+        <h1 style="letter-spacing: 15px; font-size: 3rem; margin-bottom: 10px;">AEGIS ARENA</h1>
+        <p style="color: #666; margin-bottom: 40px;">HỆ THỐNG TRÍ TUỆ NHÂN TẠO QUÂN SỰ - DEPTH 24</p>
+        <div style="display: flex;">
+            <button class="choice-btn" onclick="initGame('white')">TRẮNG</button>
+            <button class="choice-btn" onclick="initGame('black')">ĐEN</button>
+        </div>
+    </div>
+
+    <div class="arena">
+        <div id="board"></div>
+
+        <div class="sidebar">
+            <div class="status-panel">
+                <div class="label">Trạng thái AI</div>
+                <div id="status-txt">Đang chờ khởi động...</div>
+                <div id="depth-bar" style="font-size: 11px; margin-top: 5px; color: #444;">Độ sâu: 0 / 24</div>
+            </div>
+
+            <div class="status-panel" style="border-left-color: #0f0;">
+                <div class="label">Nhật ký trận đấu</div>
+                <div id="log">>> Chào mừng bạn đến với Aegis Arena.</div>
+            </div>
+
+            <button class="action-btn" onclick="location.reload()">KHỞI ĐỘNG LẠI HỆ THỐNG</button>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    
     <script src="aegis-core.js"></script>
 
     <script>
         var board = null;
         var game = new Chess();
 
+        function initGame(side) {
+            $('#overlay').fadeOut(1000);
+            
+            board = Chessboard('board', {
+                draggable: true,
+                position: 'start',
+                orientation: side,
+                // SỬA LỖI HÌNH ẢNH: Sử dụng bộ quân cờ Wikipedia chuẩn
+                pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+                onDrop: onDrop
+            });
+
+            window.postMessage({ type: "SET_SIDE", color: side }, "*");
+            $('#status-txt').text(side === 'white' ? "Lượt của bạn" : "AI đang đi quân...");
+        }
+
         function onDrop(source, target) {
             var move = game.move({ from: source, to: target, promotion: 'q' });
             if (move === null) return 'snapback';
-            
-            $('#status').text("STATUS: AEGIS THINKING...");
-            // Gọi hàm từ file AI bí mật
+
+            $('#status-txt').text("Aegis đang tính toán...");
+            $('#log').prepend(`<div>> Bạn: ${move.san}</div>`);
             askAegis(game.fen());
         }
 
-        // Lắng nghe phản hồi từ Aegis Core
         window.addEventListener("message", function(event) {
             if (event.data.type === "AEGIS_MOVE") {
                 game.move(event.data.move);
                 board.position(game.fen());
-                $('#status').text("STATUS: YOUR TURN");
+                $('#log').prepend(`<div style="color:var(--danger)">> Aegis: ${event.data.move}</div>`);
+                $('#status-txt').text("Đến lượt bạn");
             }
             if (event.data.type === "AEGIS_DEPTH") {
-                $('#depth-display').text("DEPTH: " + event.data.depth + "/24");
+                $('#depth-bar').text("Độ sâu: " + event.data.depth + " / 24");
             }
         });
-
-        board = Chessboard('board', { draggable: true, position: 'start', onDrop: onDrop });
     </script>
 </body>
 </html>
