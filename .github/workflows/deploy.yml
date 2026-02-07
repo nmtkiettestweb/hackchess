@@ -1,0 +1,34 @@
+name: Deploy Aegis Arena to Pages
+
+on:
+  push:
+    branches: ["main"] # Chạy khi bạn push code lên nhánh main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # QUAN TRỌNG: Đây là bước đóng gói các file (index.html, aegis-core.js)
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Chỉ định thư mục chứa code của bạn ('.' là thư mục gốc)
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
